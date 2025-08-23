@@ -1,0 +1,19 @@
+cat > requirements.txt << 'EOF'
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+
+# LangChain + OpenAI + Pinecone
+langchain==0.2.14
+langchain-openai==0.1.22
+langchain-community==0.2.12
+openai==1.43.0
+tiktoken==0.7.0
+pinecone-client==5.0.1
+
+# Document parsing
+pypdf==5.0.1
+python-docx==1.1.2
+unstructured==0.14.9  # optional; good for varied docs
+EOF
+pip install -r requirements.txt
