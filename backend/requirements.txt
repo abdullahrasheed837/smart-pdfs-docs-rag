@@ -3,6 +3,8 @@ fastapi
 uvicorn[standard]
 python-multipart
 
+pydantic-settings
+python-dotenv
 # LangChain + OpenAI + Pinecone
 langchain
 langchain-openai
