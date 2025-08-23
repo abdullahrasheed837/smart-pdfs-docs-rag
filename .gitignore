@@ -5,6 +5,10 @@
 # python
 backend/.venv
 backend/__pycache__/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
 backend/.pytest_cache/
 # node
 frontend/node_modules
