@@ -1,69 +1,115 @@
-# React + TypeScript + Vite
+# Smart Document Q&A Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern, responsive web interface for chatting with your documents using AI.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 📁 **File Upload**: Upload PDF, DOCX, TXT, and MD files
+- 🗂️ **Dataset Management**: Organize documents into datasets
+- 💬 **Real-time Chat**: Stream responses from AI
+- 🎨 **Modern UI**: Clean, responsive design
+- ⚡ **Fast**: Optimized for performance
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 16+ 
+- Backend server running on `http://localhost:8000`
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Install dependencies:
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+2. Start the development server:
+```bash
+npm run dev
 ```
+
+3. Open your browser to `http://localhost:5173`
+
+## Usage
+
+### Uploading Documents
+
+1. Select a dataset from the dropdown (default: "demo")
+2. Click "Choose File" to select your document
+3. Wait for the upload to complete
+4. Start chatting with your document!
+
+### Supported File Types
+
+- **PDF** (.pdf) - Research papers, reports, manuals
+- **DOCX** (.docx) - Word documents
+- **TXT** (.txt) - Plain text files
+- **MD** (.md) - Markdown files
+
+### Chat Interface
+
+- Type your questions in the input box
+- Press Enter to send (Shift+Enter for new line)
+- Responses stream in real-time
+- View conversation history with timestamps
+
+## Architecture
+
+- **React 18** with TypeScript
+- **Vite** for fast development
+- **Axios** for API communication
+- **Streaming responses** for real-time chat
+- **Responsive design** for all devices
+
+## API Endpoints
+
+The frontend communicates with these backend endpoints:
+
+- `POST /ingest/file` - Upload documents
+- `POST /query` - Ask questions (with streaming)
+- `GET /health` - Health check
+
+## Customization
+
+### Environment Variables
+
+Create a `.env` file in the frontend directory:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+### Styling
+
+The app uses modern CSS with:
+- CSS Grid and Flexbox for layout
+- CSS Variables for theming
+- Smooth animations and transitions
+- Mobile-first responsive design
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Upload fails**: Check your backend is running and API keys are configured
+2. **Chat not working**: Verify OpenAI API key and quota
+3. **Slow responses**: Check your internet connection and OpenAI service status
+
+### Development
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details.
