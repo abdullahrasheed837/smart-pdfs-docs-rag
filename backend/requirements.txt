@@ -11,7 +11,7 @@ langchain-openai
 langchain-community
 openai
 tiktoken
-pinecone-client
+pinecone
 
 # Document parsing
 pypdf

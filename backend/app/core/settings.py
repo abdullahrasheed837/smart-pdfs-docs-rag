@@ -4,8 +4,9 @@ from typing import List
 
 class Settings(BaseSettings):
     OPENAI_API_KEY: str
-    CHAT_MODEL: str = "gpt-4o-mini"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    CHAT_MODEL: str = "gpt-3.5-turbo"
+    # CHAT_MODEL: str = "gpt-4o-mini"
+    EMBEDDING_MODEL: str = "text-embedding-3-large"
 
     PINECONE_API_KEY: str
     PINECONE_INDEX: str

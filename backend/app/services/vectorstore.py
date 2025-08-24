@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Iterable
 from pinecone import Pinecone, ServerlessSpec
 from ..core.settings import settings
 
-DIMENSIONS = 1536  # text-embedding-3-small
+DIMENSIONS = 3072  # text-embedding-3-large
 
 def get_pinecone_index():
     pc = Pinecone(api_key=settings.PINECONE_API_KEY)
