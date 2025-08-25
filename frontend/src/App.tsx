@@ -229,11 +229,9 @@ function App() {
                  e.preventDefault();
                  e.stopPropagation();
                  console.log("Upload button clicked");
-                 setTimeout(() => {
                    if (fileInputRef.current) {
                      fileInputRef.current.click();
                    }
-                 }, 0);
                }}
                disabled={isUploading}
              >
