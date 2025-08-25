@@ -63,7 +63,7 @@ def rag_once(payload: Dict[str, Any]):
 
     # quick, non-streaming completion
     from openai import OpenAI
-    client = OpenAI()
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
     res = client.chat.completions.create(
         model=settings.CHAT_MODEL,
         messages=[{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": prompt}],

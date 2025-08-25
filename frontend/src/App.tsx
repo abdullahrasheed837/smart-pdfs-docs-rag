@@ -35,8 +35,14 @@ function App() {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log("No file selected");
+      setUploadStatus("No file selected");
+      return;
+    }
 
+    console.log("File selected:", file.name, file.size, file.type);
+    setUploadStatus(`Selected: ${file.name}`);
     setIsUploading(true);
     setUploadStatus("Uploading...");
 
@@ -45,30 +51,50 @@ function App() {
     formData.append("dataset", selectedDataset);
 
     try {
+      console.log("Sending upload request to:", api.defaults.baseURL + "/ingest/file");
       const response = await api.post("/ingest/file", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
+      console.log("Upload response:", response.data);
       setUploadStatus(`File uploaded successfully! File ID: ${response.data.file_id}`);
       
-             // Add welcome message if this is the first upload
-       if (messages.length === 0) {
-         setMessages([
-           {
-             id: "welcome",
-             role: "assistant",
-             content: `✅ Successfully uploaded "${file.name}" to the "${selectedDataset}" dataset. I'm ready to answer questions about this document!`,
-             timestamp: new Date(),
-           },
-         ]);
-       }
+      // Add welcome message if this is the first upload
+      if (messages.length === 0) {
+        setMessages([
+          {
+            id: "welcome",
+            role: "assistant",
+            content: `✅ Successfully uploaded "${file.name}" to the "${selectedDataset}" dataset. I'm ready to answer questions about this document!`,
+            timestamp: new Date(),
+          },
+        ]);
+      }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      console.error("Upload error:", error);
+      let errorMessage = "Unknown error";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        // Handle axios error response
+        const axiosError = error as { response?: { data?: { detail?: string }, status?: number }, message?: string };
+        if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        } else if (axiosError.response?.status) {
+          errorMessage = `HTTP ${axiosError.response.status}: ${axiosError.message}`;
+        } else {
+          errorMessage = axiosError.message || "Network error";
+        }
+      }
       setUploadStatus(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -189,11 +215,26 @@ function App() {
               type="file"
               accept=".pdf,.docx,.txt,.md"
               onChange={handleFileUpload}
-              style={{ display: "none" }}
+              style={{ 
+                position: "absolute",
+                opacity: 0,
+                width: "1px",
+                height: "1px",
+                overflow: "hidden"
+              }}
             />
                          <button
                className="upload-btn"
-               onClick={() => fileInputRef.current?.click()}
+               onClick={(e) => {
+                 e.preventDefault();
+                 e.stopPropagation();
+                 console.log("Upload button clicked");
+                 setTimeout(() => {
+                   if (fileInputRef.current) {
+                     fileInputRef.current.click();
+                   }
+                 }, 0);
+               }}
                disabled={isUploading}
              >
                {isUploading ? "⏳ Uploading..." : "📁 Choose File"}
