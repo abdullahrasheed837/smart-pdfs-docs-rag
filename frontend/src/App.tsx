@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { api, streamQuery } from "./lib/api";
 import "./App.css";
+import { APP_NAME } from "./constants";
 
 interface Message {
   id: string;
@@ -84,6 +85,11 @@ function App() {
   useEffect(() => {
     scrollToBottom();
   }, [currentChat?.messages]);
+
+  // Set document title from constant
+  useEffect(() => {
+    document.title = APP_NAME;
+  }, []);
 
   const createNewChat = () => {
     if (chats.length >= 5) return;
@@ -278,7 +284,7 @@ function App() {
     <div className="app">
       <div className="sidebar">
         <div className="sidebar-header">
-          <h2>DocuVerse AI</h2>
+          <h2>{APP_NAME}</h2>
           <p>Upload documents and ask questions about them</p>
         </div>
 
@@ -378,7 +384,7 @@ function App() {
           <div className="messages">
             {(currentChat?.messages?.length || 0) === 0 ? (
               <div className="empty-state">
-                <h3>Welcome to DocuVerse AI</h3>
+                <h3>Welcome to {APP_NAME}</h3>
                 <p>Upload a document to start asking questions about it!</p>
               </div>
             ) : (
