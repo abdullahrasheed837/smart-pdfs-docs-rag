@@ -43,7 +43,7 @@ body {
 }
 
 .sidebar-header {
-  margin-bottom: 32px;
+  margin-bottom: 16px;
 }
 
 .sidebar-header h2 {
@@ -58,14 +58,109 @@ body {
   line-height: 1.5;
 }
 
-.upload-section {
+/* Chat list and controls */
+.chat-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 8px 0;
+}
+
+.new-chat-btn {
   flex: 1;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.new-chat-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.new-chat-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chat-cap {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 16px;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chat-item:hover { 
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.chat-item.active {
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.chat-item-title {
+  flex: 1;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chat-delete-btn {
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.9;
+}
+
+.chat-delete-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.upload-section {
+  flex: 0;
+  margin-bottom: 12px;
 }
 
 .upload-section h3 {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 16px;
+  margin: 12px 0 16px 0;
 }
 
 .dataset-selector {

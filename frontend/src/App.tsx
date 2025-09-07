@@ -14,8 +14,32 @@ interface Dataset {
   count: number;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+const LS_KEY = "docqa_chats_v1";
+
 function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<ChatSession[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw) as ChatSession[];
+      // Revive message timestamps as Date instances on render time
+      return parsed.map(c => ({
+        ...c,
+        messages: c.messages.map(m => ({ ...m, timestamp: new Date(m.timestamp) })),
+      }));
+    } catch {
+      return [];
+    }
+  });
+  const [selectedChatId, setSelectedChatId] = useState<string>(() => chats[0]?.id || "");
   const [inputMessage, setInputMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>("");
@@ -25,23 +49,91 @@ function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Ensure there is at least one chat
+  useEffect(() => {
+    if (chats.length === 0) {
+      const first: ChatSession = {
+        id: crypto.randomUUID(),
+        title: "New chat",
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      setChats([first]);
+      setSelectedChatId(first.id);
+    } else if (!selectedChatId) {
+      setSelectedChatId(chats[0].id);
+    }
+  }, []);
+
+  // Persist chats to localStorage whenever they change
+  useEffect(() => {
+    const serializable = chats.map(c => ({
+      ...c,
+      messages: c.messages.map(m => ({ ...m })),
+    }));
+    localStorage.setItem(LS_KEY, JSON.stringify(serializable));
+  }, [chats]);
+
+  const currentChat = chats.find(c => c.id === selectedChatId) || chats[0];
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [currentChat?.messages]);
+
+  const createNewChat = () => {
+    if (chats.length >= 5) return;
+    const newChat: ChatSession = {
+      id: crypto.randomUUID(),
+      title: "New chat",
+      messages: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setChats(prev => [newChat, ...prev]);
+    setSelectedChatId(newChat.id);
+    setUploadStatus("");
+  };
+
+  const deleteChat = (chatId: string) => {
+    setChats(prev => {
+      const filtered = prev.filter(c => c.id !== chatId);
+      // Update selected chat if needed
+      if (chatId === selectedChatId) {
+        setSelectedChatId(filtered[0]?.id || "");
+      }
+      return filtered;
+    });
+  };
+
+  const renameChatIfNeeded = (fallbackTitle?: string) => {
+    if (!currentChat) return;
+    if (currentChat.title && currentChat.title !== "New chat") return;
+    const firstUser = currentChat.messages.find(m => m.role === "user");
+    const newTitle = fallbackTitle || firstUser?.content?.slice(0, 30) || "New chat";
+    setChats(prev => prev.map(c => c.id === currentChat.id ? { ...c, title: newTitle } : c));
+  };
+
+  const updateCurrentChatMessages = (updater: (prev: Message[]) => Message[]) => {
+    if (!currentChat) return;
+    setChats(prev => prev.map(c => c.id === currentChat.id ? {
+      ...c,
+      messages: updater(c.messages),
+      updatedAt: new Date().toISOString(),
+    } : c));
+  };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) {
-      console.log("No file selected");
       setUploadStatus("No file selected");
       return;
     }
 
-    console.log("File selected:", file.name, file.size, file.type);
     setUploadStatus(`Selected: ${file.name}`);
     setIsUploading(true);
     setUploadStatus("Uploading...");
@@ -51,34 +143,30 @@ function App() {
     formData.append("dataset", selectedDataset);
 
     try {
-      console.log("Sending upload request to:", api.defaults.baseURL + "/ingest/file");
       const response = await api.post("/ingest/file", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log("Upload response:", response.data);
       setUploadStatus(`File uploaded successfully! File ID: ${response.data.file_id}`);
-      
-      // Add welcome message if this is the first upload
-      if (messages.length === 0) {
-        setMessages([
+
+      if (currentChat && currentChat.messages.length === 0) {
+        updateCurrentChatMessages(() => ([
           {
             id: "welcome",
             role: "assistant",
             content: `✅ Successfully uploaded "${file.name}" to the "${selectedDataset}" dataset. I'm ready to answer questions about this document!`,
             timestamp: new Date(),
           },
-        ]);
+        ]));
+        renameChatIfNeeded(file.name);
       }
     } catch (error: unknown) {
-      console.error("Upload error:", error);
       let errorMessage = "Unknown error";
       if (error instanceof Error) {
         errorMessage = error.message;
       } else if (typeof error === 'object' && error !== null) {
-        // Handle axios error response
         const axiosError = error as { response?: { data?: { detail?: string }, status?: number }, message?: string };
         if (axiosError.response?.data?.detail) {
           errorMessage = axiosError.response.data.detail;
@@ -91,7 +179,6 @@ function App() {
       setUploadStatus(`Upload failed: ${errorMessage}`);
     } finally {
       setIsUploading(false);
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
@@ -99,7 +186,7 @@ function App() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim() || isLoading) return;
+    if (!inputMessage.trim() || isLoading || !currentChat) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -108,62 +195,67 @@ function App() {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const assistantMessageId = `${Date.now()}-assistant`;
+
+    // Optimistically add user message and assistant placeholder
+    updateCurrentChatMessages(prev => ([
+      ...prev,
+      userMessage,
+      {
+        id: assistantMessageId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      }
+    ]));
+
     const currentQuery = inputMessage;
     setInputMessage("");
     setIsLoading(true);
-
-    // Add assistant message placeholder
-    const assistantMessageId = Date.now().toString();
-    setMessages(prev => [...prev, {
-      id: assistantMessageId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-    }]);
+    renameChatIfNeeded();
 
     try {
       await streamQuery(
         currentQuery,
         selectedDataset,
         (chunk: string) => {
-          // Update the assistant message with streaming content
-          setMessages(prev => {
-            const newMessages = [...prev];
-            const assistantMessage = newMessages.find(msg => msg.id === assistantMessageId);
+          setChats(prev => prev.map(c => {
+            if (c.id !== currentChat.id) return c;
+            const newMessages = [...c.messages];
+            const assistantMessage = newMessages.find(m => m.id === assistantMessageId);
             if (assistantMessage) {
               assistantMessage.content += chunk;
             }
-            return newMessages;
-          });
+            return { ...c, messages: newMessages, updatedAt: new Date().toISOString() };
+          }));
         },
         () => {
-          // Streaming completed
           setIsLoading(false);
         },
         (error: string) => {
-          // Handle error
-          setMessages(prev => {
-            const newMessages = [...prev];
-            const assistantMessage = newMessages.find(msg => msg.id === assistantMessageId);
+          setChats(prev => prev.map(c => {
+            if (c.id !== currentChat.id) return c;
+            const newMessages = [...c.messages];
+            const assistantMessage = newMessages.find(m => m.id === assistantMessageId);
             if (assistantMessage) {
               assistantMessage.content = `Error: ${error}`;
             }
-            return newMessages;
-          });
+            return { ...c, messages: newMessages, updatedAt: new Date().toISOString() };
+          }));
           setIsLoading(false);
         }
       );
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const assistantMessage = newMessages.find(msg => msg.id === assistantMessageId);
+      setChats(prev => prev.map(c => {
+        if (c.id !== currentChat.id) return c;
+        const newMessages = [...c.messages];
+        const assistantMessage = newMessages.find(m => m.id === assistantMessageId);
         if (assistantMessage) {
           assistantMessage.content = `Error: ${errorMessage}`;
         }
-        return newMessages;
-      });
+        return { ...c, messages: newMessages, updatedAt: new Date().toISOString() };
+      }));
       setIsLoading(false);
     }
   };
@@ -177,8 +269,6 @@ function App() {
 
   const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputMessage(e.target.value);
-    
-    // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = 'auto';
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
@@ -187,13 +277,13 @@ function App() {
   return (
     <div className="app">
       <div className="sidebar">
-                 <div className="sidebar-header">
-           <h2>DocuVerse AI</h2>
-           <p>Upload documents and ask questions about them</p>
-         </div>
+        <div className="sidebar-header">
+          <h2>DocuVerse AI</h2>
+          <p>Upload documents and ask questions about them</p>
+        </div>
 
-                 <div className="upload-section">
-           <h3>📄 Upload Document</h3>
+        <div className="upload-section">
+          <h3>📄 Upload Document</h3>
           <div className="dataset-selector">
             <label htmlFor="dataset">Dataset:</label>
             <select
@@ -223,21 +313,20 @@ function App() {
                 overflow: "hidden"
               }}
             />
-                         <button
-               className="upload-btn"
-               onClick={(e) => {
-                 e.preventDefault();
-                 e.stopPropagation();
-                 console.log("Upload button clicked");
-                   if (fileInputRef.current) {
-                     fileInputRef.current.click();
-                   }
-               }}
-               disabled={isUploading}
-             >
-               {isUploading ? "⏳ Uploading..." : "📁 Choose File"}
-             </button>
-                         <p className="file-types">📋 Supported: PDF, DOCX, TXT, MD</p>
+            <button
+              className="upload-btn"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (fileInputRef.current) {
+                  fileInputRef.current.click();
+                }
+              }}
+              disabled={isUploading}
+            >
+              {isUploading ? "⏳ Uploading..." : "📁 Choose File"}
+            </button>
+            <p className="file-types">📋 Supported: PDF, DOCX, TXT, MD</p>
           </div>
 
           {uploadStatus && (
@@ -247,21 +336,53 @@ function App() {
           )}
         </div>
 
-                 <div className="sidebar-footer">
-           <p>🚀 Powered by OpenAI & Pinecone</p>
-         </div>
+        <div className="chat-controls">
+          <button
+            className="new-chat-btn"
+            onClick={createNewChat}
+            disabled={chats.length >= 5}
+            title={chats.length >= 5 ? "You can keep up to 5 chats" : "New chat"}
+          >
+            + New chat
+          </button>
+          <div className="chat-cap">{chats.length}/5</div>
+        </div>
+
+        <div className="chat-list">
+          {chats.map((chat) => (
+            <div
+              key={chat.id}
+              className={`chat-item ${chat.id === currentChat?.id ? 'active' : ''}`}
+              onClick={() => setSelectedChatId(chat.id)}
+            >
+              <div className="chat-item-title" title={chat.title}>{chat.title || 'New chat'}</div>
+              <button
+                className="chat-delete-btn"
+                onClick={(e) => { e.stopPropagation(); deleteChat(chat.id); }}
+                aria-label="Delete chat"
+                title="Delete chat"
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="sidebar-footer">
+          <p>🚀 Powered by OpenAI & Pinecone</p>
+        </div>
       </div>
 
       <div className="main-content">
         <div className="chat-container">
           <div className="messages">
-                         {messages.length === 0 ? (
-               <div className="empty-state">
-                 <h3>Welcome to DocuVerse AI</h3>
-                 <p>Upload a document to start asking questions about it!</p>
-               </div>
-             ) : (
-              messages.map((message) => (
+            {(currentChat?.messages?.length || 0) === 0 ? (
+              <div className="empty-state">
+                <h3>Welcome to DocuVerse AI</h3>
+                <p>Upload a document to start asking questions about it!</p>
+              </div>
+            ) : (
+              currentChat!.messages.map((message) => (
                 <div
                   key={message.id}
                   className={`message ${message.role === "user" ? "user" : "assistant"}`}
@@ -270,7 +391,7 @@ function App() {
                     {message.content}
                   </div>
                   <div className="message-time">
-                    {message.timestamp.toLocaleTimeString()}
+                    {new Date(message.timestamp).toLocaleTimeString()}
                   </div>
                 </div>
               ))
@@ -290,14 +411,14 @@ function App() {
           </div>
 
           <div className="input-container">
-                         <textarea
-               value={inputMessage}
-               onChange={handleTextareaChange}
-               onKeyPress={handleKeyPress}
-               placeholder="Ask a question about your uploaded document..."
-               disabled={isLoading}
-               rows={1}
-             />
+            <textarea
+              value={inputMessage}
+              onChange={handleTextareaChange}
+              onKeyPress={handleKeyPress}
+              placeholder="Ask a question about your uploaded document..."
+              disabled={isLoading}
+              rows={1}
+            />
             <button
               onClick={handleSendMessage}
               disabled={!inputMessage.trim() || isLoading}
