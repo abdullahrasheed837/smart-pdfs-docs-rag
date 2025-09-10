@@ -149,11 +149,8 @@ function App() {
     formData.append("dataset", selectedDataset);
 
     try {
-      const response = await api.post("/ingest/file", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await api.post("/ingest/file", formData);
+
 
       setUploadStatus(`File uploaded successfully! File ID: ${response.data.file_id}`);
 
@@ -248,8 +245,8 @@ function App() {
             }
             return { ...c, messages: newMessages, updatedAt: new Date().toISOString() };
           }));
-          setIsLoading(false);
-        }
+        },
+        currentChat.id  // Add chatId parameter
       );
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
