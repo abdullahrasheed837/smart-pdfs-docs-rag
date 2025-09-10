@@ -386,30 +386,27 @@ function App() {
                 <p>Upload a document to start asking questions about it!</p>
               </div>
             ) : (
-              currentChat!.messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message ${message.role === "user" ? "user" : "assistant"}`}
-                >
-                  <div className="message-content">
-                    {message.content}
+              <>
+                {currentChat!.messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`message ${message.role === "user" ? "user" : "assistant"}`}
+                  >
+                    <div className="message-content">
+                      {message.content || (message.role === "assistant" && isLoading ? (
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      ) : "")}
+                    </div>
+                    <div className="message-time">
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </div>
                   </div>
-                  <div className="message-time">
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              ))
-            )}
-            {isLoading && (
-              <div className="message assistant">
-                <div className="message-content">
-                  <div className="typing-indicator">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
+                ))}
+              </>
             )}
             <div ref={messagesEndRef} />
           </div>
