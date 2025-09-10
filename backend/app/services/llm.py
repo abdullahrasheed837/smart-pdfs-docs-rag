@@ -13,19 +13,18 @@ def get_client():
 
 def stream_chat(prompt: str, system: str = "You are a helpful AI assistant.") -> Iterable[str]:
     client = get_client()
-    with client.chat.completions.with_streaming_response.create(
+    stream = client.chat.completions.create(
         model=settings.CHAT_MODEL,
         messages=[
             {"role": "system", "content": system},
             {"role": "user", "content": prompt},
         ],
         temperature=0.2,
-    ) as stream:
-        for event in stream:
-            if event.type == "content.delta":
-                delta = event.delta
-                if delta and delta.get("content"):
-                    yield delta["content"]
+        stream=True,
+    )
+    for chunk in stream:
+        if chunk.choices[0].delta.content is not None:
+            yield chunk.choices[0].delta.content
 
 
 def stream_chat_with_messages(messages: List[Dict], temperature: float = 0.2) -> Iterable[str]:
@@ -34,13 +33,12 @@ def stream_chat_with_messages(messages: List[Dict], temperature: float = 0.2) ->
     messages: [{role: "system"|"user"|"assistant", content: str}, ...]
     """
     client = get_client()
-    with client.chat.completions.with_streaming_response.create(
+    stream = client.chat.completions.create(
         model=settings.CHAT_MODEL,
         messages=messages,
         temperature=temperature,
-    ) as stream:
-        for event in stream:
-            if event.type == "content.delta":
-                delta = event.delta
-                if delta and delta.get("content"):
-                    yield delta["content"]
+        stream=True,
+    )
+    for chunk in stream:
+        if chunk.choices[0].delta.content is not None:
+            yield chunk.choices[0].delta.content
