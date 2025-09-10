@@ -39,19 +39,20 @@ api.interceptors.response.use(
 
 // Helper function for streaming responses
 export const streamQuery = async (
-  query: string,
+  question: string,
   dataset: string,
   onChunk: (chunk: string) => void,
   onComplete: () => void,
-  onError: (error: string) => void
+  onError: (error: string) => void,
+  chatId: string = "default"
 ) => {
   try {
-    const response = await fetch(`${API_URL}/query`, {
+    const response = await fetch(`${API_URL}/rag/query/stream`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ query, dataset }),
+      body: JSON.stringify({ question, dataset, chat_id: chatId, top_k: 6 }),
     });
 
     if (!response.ok) {
