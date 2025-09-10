@@ -14,7 +14,13 @@ class Settings(BaseSettings):
     PINECONE_REGION: str = "us-east-1"
     PINECONE_NAMESPACE: str = "default"
 
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173", "http://localhost:3002"]
+    # Frontend runs on port 3002 according to vite.config.ts
+    ALLOWED_ORIGINS: List[str] = [
+        "http://localhost:3002",
+        "http://127.0.0.1:3002",
+        "http://localhost:5173",  # Keep for flexibility
+        "http://127.0.0.1:5173",
+    ]
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
