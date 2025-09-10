@@ -213,6 +213,7 @@ function App() {
     ]));
 
     const currentQuery = inputMessage;
+    const chatId = currentChat.id; // Capture chat ID to prevent closure issues
     setInputMessage("");
     setIsLoading(true);
     renameChatIfNeeded();
@@ -223,7 +224,7 @@ function App() {
         selectedDataset,
         (chunk: string) => {
           setChats(prev => prev.map(c => {
-            if (c.id !== currentChat.id) return c;
+            if (c.id !== chatId) return c;
             const newMessages = [...c.messages];
             const assistantMessage = newMessages.find(m => m.id === assistantMessageId);
             if (assistantMessage) {
@@ -237,7 +238,7 @@ function App() {
         },
         (error: string) => {
           setChats(prev => prev.map(c => {
-            if (c.id !== currentChat.id) return c;
+            if (c.id !== chatId) return c;
             const newMessages = [...c.messages];
             const assistantMessage = newMessages.find(m => m.id === assistantMessageId);
             if (assistantMessage) {
@@ -246,12 +247,12 @@ function App() {
             return { ...c, messages: newMessages, updatedAt: new Date().toISOString() };
           }));
         },
-        currentChat.id  // Add chatId parameter
+        chatId  // Use captured chatId
       );
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : "Unknown error";
       setChats(prev => prev.map(c => {
-        if (c.id !== currentChat.id) return c;
+        if (c.id !== chatId) return c;
         const newMessages = [...c.messages];
         const assistantMessage = newMessages.find(m => m.id === assistantMessageId);
         if (assistantMessage) {

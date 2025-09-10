@@ -33,7 +33,7 @@ def _background_ingest(file_path: Path, file_id: str, dataset: str | None, origi
                     "original_filename": original_filename or str(file_path.name),
                     "type": kind,
                     "dataset": dataset or "default",
-                    "text": chunks[i][:1000],  # preview
+                    "text": chunks[i],  # full text for better retrieval
                 }
             })
         upsert_embeddings(items, namespace=settings.PINECONE_NAMESPACE)

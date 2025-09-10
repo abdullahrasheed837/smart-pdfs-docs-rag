@@ -21,13 +21,17 @@ MAX_TURNS = 8  # keep last N user/assistant turns
 
 def build_prompt(question: str, matches: Any) -> str:
     lines: List[str] = ["Context:"]
-    for i, m in enumerate(matches.matches):
-        meta = m.get("metadata", {}) if hasattr(m, "get") else m.metadata
-        txt = meta.get("text") if isinstance(meta, dict) else meta["text"]
-        lines.append(f"[{i}] {txt}")
+    if not matches.matches:
+        lines.append("No relevant documents found.")
+    else:
+        for i, m in enumerate(matches.matches):
+            meta = m.get("metadata", {}) if hasattr(m, "get") else m.metadata
+            txt = meta.get("text") if isinstance(meta, dict) else meta["text"]
+            score = getattr(m, 'score', 0.0)
+            lines.append(f"[{i}] (score: {score:.3f}) {txt}")
     lines.append("\nQuestion:")
     lines.append(question)
-    lines.append("\nInstructions: Answer strictly from the context above. If missing, say you don't know.")
+    lines.append("\nInstructions: Answer strictly from the context above. If missing or irrelevant, say you don't know.")
     return "\n".join(lines)
 
 

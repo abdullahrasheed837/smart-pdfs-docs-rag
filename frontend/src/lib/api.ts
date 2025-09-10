@@ -54,7 +54,6 @@ export const streamQuery = async (
       },
       body: JSON.stringify({ question, dataset, chat_id: chatId, top_k: 6 }),
     });
-
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -65,33 +64,17 @@ export const streamQuery = async (
     }
 
     const decoder = new TextDecoder();
-    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       
       if (done) break;
       
-      buffer += decoder.decode(value, { stream: true });
+      const chunk = decoder.decode(value, { stream: true });
       
-      // Process complete lines
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || ""; // Keep incomplete line in buffer
-      
-      for (const line of lines) {
-        if (line.trim()) {
-          try {
-            const data = JSON.parse(line);
-            if (data.content) {
-              onChunk(data.content);
-            }
-          } catch {
-            // If not JSON, treat as plain text
-            if (line.trim()) {
-              onChunk(line.trim());
-            }
-          }
-        }
+      // Backend sends individual tokens directly
+      if (chunk.trim()) {
+        onChunk(chunk);
       }
     }
 
