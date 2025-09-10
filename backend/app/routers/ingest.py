@@ -1,5 +1,6 @@
 # backend/app/routers/ingest.py
 import uuid
+import re
 from pathlib import Path
 from typing import List, Dict, Any
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
@@ -14,7 +15,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 router = APIRouter()
 
-def _background_ingest(file_path: Path, file_id: str, dataset: str | None):
+def _background_ingest(file_path: Path, file_id: str, dataset: str | None, original_filename: str | None):
     try:
         kind, text = load_text_from_file(file_path)
         chunks = split_text(text)
@@ -29,6 +30,7 @@ def _background_ingest(file_path: Path, file_id: str, dataset: str | None):
                     "file_id": file_id,
                     "chunk_index": i,
                     "source_path": str(file_path.name),
+                    "original_filename": original_filename or str(file_path.name),
                     "type": kind,
                     "dataset": dataset or "default",
                     "text": chunks[i][:1000],  # preview
@@ -49,9 +51,11 @@ async def upload_file(
     if ext not in [".pdf", ".docx", ".txt", ".md"]:
         raise HTTPException(status_code=400, detail="Only PDF, DOCX, TXT, MD are supported.")
     file_id = str(uuid.uuid4())
-    dest = UPLOAD_DIR / f"{file_id}{ext}"
+    # Sanitize original filename (keep alphanumerics, dash, underscore, dot)
+    safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", Path(file.filename).stem)[:80]
+    dest = UPLOAD_DIR / f"{file_id}__{safe_name}{ext}"
     with dest.open("wb") as f:
         f.write(await file.read())
 
-    background_tasks.add_task(_background_ingest, dest, file_id, dataset)
+    background_tasks.add_task(_background_ingest, dest, file_id, dataset, file.filename)
     return {"status": "queued", "file_id": file_id, "filename": file.filename}
